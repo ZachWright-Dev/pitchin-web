@@ -1,6 +1,5 @@
 import Link from "next/link";
 import GoogleSignIn from "@/app/components/GoogleSignIn";
-import LoginForm from "@/app/login/components/LoginForm";
 import { LogoMark } from "@/app/login/utility/index";
 
 export default function LoginPage() {
@@ -74,30 +73,10 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <LoginForm />
-
-          {/* Divider */}
-          <div className="my-6 flex items-center gap-3">
-            <span className="h-px flex-1 bg-[#0F1A3D]/10" />
-            <span className="text-xs font-medium uppercase tracking-wider text-[#0F1A3D]/40">
-              or
-            </span>
-            <span className="h-px flex-1 bg-[#0F1A3D]/10" />
-          </div>
-
           {/* Google OAuth */}
-          <GoogleSignIn />
-
-          {/* Register link */}
-          <p className="mt-6 text-center text-sm text-[#0F1A3D]/65">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
-              className="font-semibold text-[#4F7CFF] underline-offset-4 transition hover:underline"
-            >
-              Register
-            </Link>
-          </p>
+          <div className="pt-2">
+            <GoogleSignIn />
+          </div>
         </div>
 
         {/* Back link */}
