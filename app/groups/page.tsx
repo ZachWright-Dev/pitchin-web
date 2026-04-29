@@ -8,20 +8,17 @@ import { useState } from "react";
 // Dummy placeholder data — replace with real data from your backend.
 // ============================================================================
 
-type Balance = {
-  id: string;
-  name: string;
+type Member = {
   initials: string;
-  balance: number; // positive = they owe you, negative = you owe them
   color: string;
 };
 
 type Group = {
   id: string;
   name: string;
+  emoji?: string;
+  members: Member[];
   balance: number;
-  image?: string; // optional emoji/url stand-in
-  accent: string;
 };
 
 const USER = {
@@ -30,31 +27,47 @@ const USER = {
   initials: "ZW",
 };
 
-const SUMMARY = {
-  overall: 7.54,
-  owed: 60.75,
-  owe: 53.21,
-  groupCount: 2,
-};
-
-const PEOPLE: Balance[] = [
-  { id: "1", name: "Alex K.", initials: "AK", balance: 73.42, color: "#4F7CFF" },
-  { id: "2", name: "Sam M.", initials: "SM", balance: -48.2, color: "#8B7CF6" },
-  { id: "3", name: "Maya C.", initials: "MC", balance: 12.55, color: "#34D399" },
-  { id: "4", name: "Devon H.", initials: "DH", balance: -5.01, color: "#0F1A3D" },
-];
-
 const GROUPS: Group[] = [
-  { id: "1", name: "Nobu Dinner", balance: 60.75, image: "🍣", accent: "#4F7CFF" },
-  { id: "2", name: "Ski Trip", balance: -5.01, image: "⛷️", accent: "#8B7CF6" },
-  { id: "3", name: "Roommates", balance: -48.2, image: "🏠", accent: "#34D399" },
+  {
+    id: "1",
+    name: "Nobu Dinner",
+    emoji: "🍣",
+    members: [
+      { initials: "AK", color: "#4F7CFF" },
+      { initials: "SM", color: "#8B7CF6" },
+      { initials: "MC", color: "#34D399" },
+    ],
+    balance: 90,
+  },
+  {
+    id: "2",
+    name: "Ski Trip",
+    emoji: "⛷️",
+    members: [
+      { initials: "DH", color: "#0F1A3D" },
+      { initials: "AK", color: "#4F7CFF" },
+      { initials: "SM", color: "#8B7CF6" },
+    ],
+    balance: 3,
+  },
+  {
+    id: "3",
+    name: "Roommates",
+    emoji: "🏠",
+    members: [
+      { initials: "MC", color: "#34D399" },
+      { initials: "DH", color: "#0F1A3D" },
+      { initials: "AK", color: "#4F7CFF" },
+    ],
+    balance: -40,
+  },
 ];
 
 // ============================================================================
 // Page
 // ============================================================================
 
-export default function DashboardPage() {
+export default function GroupsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
@@ -86,7 +99,7 @@ export default function DashboardPage() {
       {/* Main content */}
       <main className="relative z-10 flex-1 overflow-x-hidden">
         <div className="mx-auto max-w-5xl px-6 py-8 md:px-10 md:py-10">
-          {/* Mobile hamburger (visible when sidebar collapsed) */}
+          {/* Mobile hamburger */}
           {!sidebarOpen && (
             <button
               onClick={() => setSidebarOpen(true)}
@@ -98,71 +111,138 @@ export default function DashboardPage() {
           )}
 
           {/* Page header */}
-          <div className="mb-6 flex items-end justify-between">
+          <div className="mb-8 flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-[#0F1A3D]/50">
-                Dashboard
+                Groups
               </p>
               <h1 className="mt-1 text-3xl font-extrabold tracking-tight md:text-4xl">
-                Hey, {USER.name.split(" ")[0]} 👋
+                Your Groups
               </h1>
             </div>
+            <button className="inline-flex items-center gap-2 rounded-xl bg-[#0F1A3D] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4F7CFF]">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Create Group
+            </button>
           </div>
 
-          {/* Balance summary */}
-          <BalanceSummary />
-
-          {/* Balances by person */}
-          <section className="mt-8">
-            <div className="mb-4 flex items-baseline justify-between">
-              <h2 className="text-lg font-bold tracking-tight">
-                Balances by person
-              </h2>
-              <span className="text-xs font-medium text-[#0F1A3D]/50">
-                {PEOPLE.length} people
-              </span>
-            </div>
-            <div className="overflow-hidden rounded-2xl border border-[#0F1A3D]/10 bg-white/80 shadow-sm backdrop-blur">
-              {PEOPLE.map((person, i) => (
-                <PersonRow
-                  key={person.id}
-                  person={person}
-                  isLast={i === PEOPLE.length - 1}
-                />
-              ))}
-            </div>
-          </section>
-
-          {/* Groups */}
-          <section className="mt-8">
-            <div className="mb-4 flex items-baseline justify-between">
-              <h2 className="text-lg font-bold tracking-tight">Your Groups</h2>
-              <Link
-                href="/groups"
-                className="group inline-flex items-center gap-1 text-sm font-semibold text-[#4F7CFF] transition hover:text-[#0F1A3D]"
-              >
-                View all Groups
-                <svg
-                  className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12h14M13 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {GROUPS.map((group) => (
-                <GroupCard key={group.id} group={group} />
-              ))}
-            </div>
-          </section>
+          {/* Groups list */}
+          <div className="overflow-hidden rounded-2xl border border-[#0F1A3D]/10 bg-white/80 shadow-sm backdrop-blur">
+            {GROUPS.map((group, i) => (
+              <GroupRow
+                key={group.id}
+                group={group}
+                isLast={i === GROUPS.length - 1}
+              />
+            ))}
+          </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+// ============================================================================
+// Group Row
+// ============================================================================
+
+function GroupRow({ group, isLast }: { group: Group; isLast: boolean }) {
+  const positive = group.balance >= 0;
+  return (
+    <Link
+      href={`/groups/${group.id}`}
+      className={`group flex items-center gap-5 px-6 py-5 transition hover:bg-[#FAFBFF] ${
+        isLast ? "" : "border-b border-[#0F1A3D]/8"
+      }`}
+    >
+      {/* Group image */}
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#0F1A3D]/5 text-2xl">
+        {group.emoji ?? "👥"}
+      </div>
+
+      {/* Name + members */}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-base font-bold">{group.name}</p>
+        <div className="mt-2 flex items-center">
+          <AvatarStack members={group.members} />
+        </div>
+      </div>
+
+      {/* Balance */}
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#0F1A3D]/45">
+          Balance
+        </p>
+        <p
+          className={`font-mono text-xl font-bold ${
+            positive ? "text-[#0E9F6E]" : "text-[#E5484D]"
+          }`}
+        >
+          {positive ? "+" : "−"}${Math.abs(group.balance).toFixed(0)}
+        </p>
+      </div>
+
+      {/* Chevron */}
+      <svg
+        className="h-4 w-4 shrink-0 text-[#0F1A3D]/25 transition group-hover:translate-x-0.5 group-hover:text-[#4F7CFF]"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M9 18l6-6-6-6" />
+      </svg>
+    </Link>
+  );
+}
+
+// ============================================================================
+// Avatar Stack
+// ============================================================================
+
+function AvatarStack({ members }: { members: Member[] }) {
+  const visible = members.slice(0, 4);
+  const overflow = members.length - visible.length;
+  return (
+    <div className="flex items-center">
+      {visible.map((m, i) => (
+        <div
+          key={i}
+          className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-white font-semibold text-white"
+          style={{
+            marginLeft: i === 0 ? 0 : -8,
+            background: `linear-gradient(135deg, ${m.color}, ${m.color}CC)`,
+            fontSize: 10,
+            zIndex: visible.length - i,
+          }}
+        >
+          {m.initials}
+        </div>
+      ))}
+      {overflow > 0 && (
+        <div
+          className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-white bg-[#0F1A3D]/10 text-[10px] font-semibold text-[#0F1A3D]/60"
+          style={{ marginLeft: -8 }}
+        >
+          +{overflow}
+        </div>
+      )}
     </div>
   );
 }
@@ -244,9 +324,7 @@ function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
             <Avatar initials={USER.initials} color="#4F7CFF" size={40} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{USER.name}</p>
-              <p className="truncate text-xs text-[#0F1A3D]/55">
-                {USER.plan}
-              </p>
+              <p className="truncate text-xs text-[#0F1A3D]/55">{USER.plan}</p>
             </div>
             <svg
               className="h-4 w-4 text-[#0F1A3D]/40 transition group-hover:text-[#0F1A3D]/70"
@@ -265,173 +343,6 @@ function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
         </div>
       </div>
     </aside>
-  );
-}
-
-// ============================================================================
-// Balance Summary
-// ============================================================================
-
-function BalanceSummary() {
-  const positive = SUMMARY.overall >= 0;
-  return (
-    <div className="relative">
-      <div
-        aria-hidden
-        className="absolute -inset-2 rounded-3xl opacity-50 blur-2xl"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(79,124,255,0.2), rgba(139,124,246,0.15), rgba(52,211,153,0.15))",
-        }}
-      />
-      <div className="relative grid grid-cols-1 gap-6 rounded-2xl border border-[#0F1A3D]/10 bg-white/90 p-6 shadow-sm backdrop-blur md:grid-cols-3 md:gap-8 md:p-8">
-        {/* Overall */}
-        <div className="md:border-r md:border-[#0F1A3D]/10 md:pr-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#0F1A3D]/50">
-            Your overall balance
-          </p>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span
-              className={`text-4xl font-extrabold tracking-tight md:text-5xl ${
-                positive ? "text-[#0E9F6E]" : "text-[#E5484D]"
-              }`}
-            >
-              {positive ? "+" : "−"}${Math.abs(SUMMARY.overall).toFixed(2)}
-            </span>
-          </div>
-          <p className="mt-2 text-xs text-[#0F1A3D]/55">
-            {positive ? "You're owed" : "You owe"} money across{" "}
-            {SUMMARY.groupCount} groups
-          </p>
-        </div>
-
-        {/* You're owed */}
-        <div className="flex flex-col justify-center md:border-r md:border-[#0F1A3D]/10 md:pr-8">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-[#34D399]" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#0F1A3D]/50">
-              You're owed
-            </p>
-          </div>
-          <p className="mt-2 text-2xl font-bold text-[#0E9F6E] md:text-3xl">
-            ${SUMMARY.owed.toFixed(2)}
-          </p>
-        </div>
-
-        {/* You owe */}
-        <div className="flex flex-col justify-center">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-[#E5484D]" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#0F1A3D]/50">
-              You owe
-            </p>
-          </div>
-          <p className="mt-2 text-2xl font-bold text-[#E5484D] md:text-3xl">
-            ${SUMMARY.owe.toFixed(2)}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// Person Row
-// ============================================================================
-
-function PersonRow({ person, isLast }: { person: Balance; isLast: boolean }) {
-  const owesYou = person.balance > 0;
-  return (
-    <div
-      className={`group flex items-center gap-4 px-5 py-4 transition hover:bg-[#FAFBFF] ${
-        isLast ? "" : "border-b border-[#0F1A3D]/8"
-      }`}
-    >
-      <Avatar initials={person.initials} color={person.color} size={44} />
-
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{person.name}</p>
-        <p className="text-xs text-[#0F1A3D]/55">
-          {owesYou ? "owes you" : "you owe"}
-        </p>
-      </div>
-
-      <div className="text-right">
-        <p
-          className={`font-mono text-sm font-bold ${
-            owesYou ? "text-[#0E9F6E]" : "text-[#E5484D]"
-          }`}
-        >
-          {owesYou ? "+" : "−"}${Math.abs(person.balance).toFixed(2)}
-        </p>
-      </div>
-
-      <button
-        className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition ${
-          owesYou
-            ? "border border-[#0F1A3D]/15 bg-white text-[#0F1A3D] hover:border-[#0F1A3D]/30 hover:bg-[#0F1A3D] hover:text-white"
-            : "bg-[#0F1A3D] text-white shadow-sm hover:bg-[#4F7CFF]"
-        }`}
-      >
-        {owesYou ? "Remind" : "Pay"}
-      </button>
-    </div>
-  );
-}
-
-// ============================================================================
-// Group Card
-// ============================================================================
-
-function GroupCard({ group }: { group: Group }) {
-  const positive = group.balance >= 0;
-  return (
-    <button className="group relative overflow-hidden rounded-2xl border border-[#0F1A3D]/10 bg-white/90 p-5 text-left shadow-sm backdrop-blur transition hover:translate-y-[-2px] hover:border-[#0F1A3D]/20 hover:shadow-md">
-      {/* Accent strip */}
-      <span
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-1"
-        style={{ background: group.accent }}
-      />
-
-      <div className="flex items-start gap-3">
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl"
-          style={{
-            background: `${group.accent}18`,
-          }}
-        >
-          {group.image ?? "👥"}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold">{group.name}</p>
-          <p className="mt-0.5 text-xs text-[#0F1A3D]/50">
-            {positive ? "You're owed" : "You owe"}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 flex items-baseline justify-between">
-        <span
-          className={`font-mono text-xl font-bold ${
-            positive ? "text-[#0E9F6E]" : "text-[#E5484D]"
-          }`}
-        >
-          {positive ? "+" : "−"}${Math.abs(group.balance).toFixed(2)}
-        </span>
-        <svg
-          className="h-4 w-4 text-[#0F1A3D]/30 transition group-hover:translate-x-0.5 group-hover:text-[#4F7CFF]"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M5 12h14M13 5l7 7-7 7" />
-        </svg>
-      </div>
-    </button>
   );
 }
 
@@ -583,24 +494,8 @@ function LogoMark() {
       <path d="M34 38h10v8H34l-3-4 3-4z" fill="#4F7CFF" />
       <path d="M44 38h8a8 8 0 0 0 0-8h-8v8z" fill="#8B7CF6" />
       <rect x="26" y="14" width="14" height="18" rx="1" fill="#FFFFFF" />
-      <rect
-        x="29"
-        y="19"
-        width="8"
-        height="1.5"
-        rx="0.5"
-        fill="#0F1A3D"
-        opacity="0.15"
-      />
-      <rect
-        x="29"
-        y="22"
-        width="6"
-        height="1.5"
-        rx="0.5"
-        fill="#0F1A3D"
-        opacity="0.15"
-      />
+      <rect x="29" y="19" width="8" height="1.5" rx="0.5" fill="#0F1A3D" opacity="0.15" />
+      <rect x="29" y="22" width="6" height="1.5" rx="0.5" fill="#0F1A3D" opacity="0.15" />
     </svg>
   );
 }
