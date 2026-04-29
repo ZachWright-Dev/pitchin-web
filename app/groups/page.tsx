@@ -120,7 +120,10 @@ export default function GroupsPage() {
                 Your Groups
               </h1>
             </div>
-            <button className="inline-flex items-center gap-2 rounded-xl bg-[#0F1A3D] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4F7CFF]">
+            <Link
+              href="/groups/new"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#0F1A3D] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4F7CFF]"
+            >
               <svg
                 width="14"
                 height="14"
@@ -136,7 +139,7 @@ export default function GroupsPage() {
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               Create Group
-            </button>
+            </Link>
           </div>
 
           {/* Groups list */}
