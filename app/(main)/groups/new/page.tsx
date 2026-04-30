@@ -2,7 +2,6 @@
 
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 // ============================================================================
 // Types & Constants
@@ -11,16 +10,7 @@ import { usePathname } from "next/navigation";
 type LineItem = { id: string; name: string; qty: string; price: string };
 type AmountMode = "percent" | "dollar";
 
-const COLORS = {
-  ink: "#0F1A3D",
-  accent: "#4F7CFF",
-  violet: "#8B7CF6",
-  mint: "#34D399",
-  danger: "#E5484D",
-  surface: "#FAFBFF",
-} as const;
-
-const USER = { name: "Zach Wright", plan: "Pro Plan", initials: "ZW" };
+const NUMBER_INPUT_CLASS = "no-spinner";
 
 function newItem(): LineItem {
   return { id: crypto.randomUUID(), name: "", qty: "1", price: "" };
@@ -40,16 +30,11 @@ const itemTotal = (item: LineItem) => num(item.price) * (num(item.qty) || 0);
 const computeAmount = (value: string, mode: AmountMode, base: number) =>
   mode === "percent" ? base * (num(value) / 100) : num(value);
 
-// Shared input class — strips browser number spinners.
-// (Pairs with global CSS for ::-webkit-{inner,outer}-spin-button suppression.)
-const NUMBER_INPUT_CLASS = "no-spinner";
-
 // ============================================================================
 // Page
 // ============================================================================
 
 export default function CreateGroupPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [groupName, setGroupName] = useState("");
   const [groupPhoto, setGroupPhoto] = useState<File | null>(null);
   const [groupPhotoUrl, setGroupPhotoUrl] = useState<string | null>(null);
@@ -103,7 +88,7 @@ export default function CreateGroupPage() {
   const canCreate = lineItems.length > 0;
 
   return (
-    <div className="relative flex min-h-screen bg-[#FAFBFF] text-[#0F1A3D]">
+    <>
       {/* Hide native number-input spinners across the whole page */}
       <style jsx global>{`
         .no-spinner::-webkit-outer-spin-button,
@@ -116,57 +101,41 @@ export default function CreateGroupPage() {
         }
       `}</style>
 
-      <BackgroundGlows />
+      <div className="mx-auto max-w-2xl">
+        <PageHeader />
 
-      <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen((s) => !s)} />
+        <div className="space-y-5">
+          <GroupInfoCard
+            groupName={groupName}
+            setGroupName={setGroupName}
+            groupPhoto={groupPhoto}
+            groupPhotoUrl={groupPhotoUrl}
+            groupPhotoRef={groupPhotoRef}
+            onPickPhoto={handleGroupPhotoChange}
+          />
 
-      <main className="relative z-10 flex-1 overflow-x-hidden">
-        <div className="mx-auto max-w-2xl px-6 py-8 md:px-10 md:py-10">
-          {!sidebarOpen && (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="mb-6 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#0F1A3D]/10 bg-white shadow-sm transition hover:bg-[#FAFBFF]"
-              aria-label="Open menu"
-            >
-              <Hamburger />
-            </button>
+          <ReceiptCard
+            receiptPhoto={receiptPhoto}
+            receiptPhotoUrl={receiptPhotoUrl}
+            receiptPhotoRef={receiptPhotoRef}
+            isDragging={isDragging}
+            setIsDragging={setIsDragging}
+            onDrop={handleDrop}
+            onPickPhoto={handleReceiptPhotoChange}
+            onManualEntry={() => setShowItemModal(true)}
+            onAiParse={handleAiParse}
+          />
+
+          {lineItems.length > 0 && (
+            <ReceiptItemsSummary
+              items={lineItems}
+              onEdit={() => setShowItemModal(true)}
+            />
           )}
 
-          <PageHeader />
-
-          <div className="space-y-5">
-            <GroupInfoCard
-              groupName={groupName}
-              setGroupName={setGroupName}
-              groupPhoto={groupPhoto}
-              groupPhotoUrl={groupPhotoUrl}
-              groupPhotoRef={groupPhotoRef}
-              onPickPhoto={handleGroupPhotoChange}
-            />
-
-            <ReceiptCard
-              receiptPhoto={receiptPhoto}
-              receiptPhotoUrl={receiptPhotoUrl}
-              receiptPhotoRef={receiptPhotoRef}
-              isDragging={isDragging}
-              setIsDragging={setIsDragging}
-              onDrop={handleDrop}
-              onPickPhoto={handleReceiptPhotoChange}
-              onManualEntry={() => setShowItemModal(true)}
-              onAiParse={handleAiParse}
-            />
-
-            {lineItems.length > 0 && (
-              <ReceiptItemsSummary
-                items={lineItems}
-                onEdit={() => setShowItemModal(true)}
-              />
-            )}
-
-            <FooterActions canCreate={canCreate} />
-          </div>
+          <FooterActions canCreate={canCreate} />
         </div>
-      </main>
+      </div>
 
       {aiLoading && <AiLoadingOverlay />}
 
@@ -188,33 +157,6 @@ export default function CreateGroupPage() {
           onCancel={() => setShowItemModal(false)}
         />
       )}
-    </div>
-  );
-}
-
-// ============================================================================
-// Background atmosphere
-// ============================================================================
-
-function BackgroundGlows() {
-  return (
-    <>
-      <div
-        aria-hidden
-        className="pointer-events-none fixed -top-32 right-1/4 h-[420px] w-[420px] rounded-full opacity-20 blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle at center, #4F7CFF 0%, rgba(79,124,255,0) 70%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed bottom-0 left-1/3 h-[400px] w-[400px] rounded-full opacity-20 blur-3xl"
-        style={{
-          background:
-            "radial-gradient(circle at center, #8B7CF6 0%, rgba(139,124,246,0) 70%)",
-        }}
-      />
     </>
   );
 }
@@ -717,7 +659,6 @@ function LineItemRow({
         pattern="[0-9]*"
         value={item.qty}
         onChange={(e) => {
-          // Allow empty; otherwise digits only.
           const v = e.target.value.replace(/[^0-9]/g, "");
           onChange("qty", v);
         }}
@@ -729,9 +670,7 @@ function LineItemRow({
         inputMode="decimal"
         value={item.price}
         onChange={(e) => {
-          // Allow empty, digits, and one decimal point.
           const v = e.target.value.replace(/[^0-9.]/g, "");
-          // Prevent multiple dots.
           const parts = v.split(".");
           const cleaned =
             parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : v;
@@ -882,154 +821,8 @@ function AmountModeToggle({
 }
 
 // ============================================================================
-// Sidebar
-// ============================================================================
-
-const NAV_ITEMS: { label: string; href: string; icon: React.ReactNode }[] = [
-  { label: "Dashboard", href: "/dashboard", icon: <IconDashboard /> },
-  { label: "Activity", href: "#", icon: <IconActivity /> },
-  { label: "Friends", href: "#", icon: <IconFriends /> },
-  { label: "Groups", href: "/groups", icon: <IconGroups /> },
-];
-
-function Sidebar({ open, onToggle }: { open: boolean; onToggle: () => void }) {
-  const pathname = usePathname();
-  return (
-    <aside
-      className={`relative z-20 flex shrink-0 flex-col border-r border-[#0F1A3D]/10 bg-white/80 backdrop-blur transition-all duration-300 ${
-        open ? "w-64" : "w-0 overflow-hidden border-r-0"
-      }`}
-    >
-      <div className="flex h-full w-64 flex-col">
-        <div className="flex items-center justify-between px-5 py-5">
-          <div className="flex items-center gap-2">
-            <LogoMark />
-            <span className="text-lg font-bold tracking-tight">
-              <span className="text-[#0F1A3D]">Pitch</span>
-              <span className="text-[#4F7CFF]">In</span>
-            </span>
-          </div>
-          <button
-            onClick={onToggle}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#0F1A3D]/60 transition hover:bg-[#0F1A3D]/5 hover:text-[#0F1A3D]"
-            aria-label="Collapse menu"
-          >
-            <Hamburger />
-          </button>
-        </div>
-
-        <nav className="flex-1 space-y-1 px-3 py-2">
-          {NAV_ITEMS.map((item) => {
-            const active =
-              pathname === item.href ||
-              (item.href === "/groups" && pathname.startsWith("/groups"));
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                  active
-                    ? "bg-[#0F1A3D] text-white shadow-sm"
-                    : "text-[#0F1A3D]/70 hover:bg-[#0F1A3D]/5 hover:text-[#0F1A3D]"
-                }`}
-              >
-                <span
-                  className={`flex h-5 w-5 items-center justify-center ${
-                    active ? "text-white" : "text-[#0F1A3D]/60"
-                  }`}
-                >
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-                {active && (
-                  <span
-                    aria-hidden
-                    className="absolute right-3 h-1.5 w-1.5 rounded-full bg-[#34D399]"
-                  />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="border-t border-[#0F1A3D]/10 p-4">
-          <button className="group flex w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-[#0F1A3D]/5">
-            <Avatar initials={USER.initials} color="#4F7CFF" size={40} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{USER.name}</p>
-              <p className="truncate text-xs text-[#0F1A3D]/55">{USER.plan}</p>
-            </div>
-            <svg
-              className="h-4 w-4 text-[#0F1A3D]/40 transition group-hover:text-[#0F1A3D]/70"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="1" />
-              <circle cx="12" cy="5" r="1" />
-              <circle cx="12" cy="19" r="1" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-// ============================================================================
-// Avatar
-// ============================================================================
-
-function Avatar({
-  initials,
-  color,
-  size = 40,
-}: {
-  initials: string;
-  color: string;
-  size?: number;
-}) {
-  return (
-    <div
-      className="flex shrink-0 items-center justify-center rounded-full font-semibold text-white"
-      style={{
-        width: size,
-        height: size,
-        background: `linear-gradient(135deg, ${color}, ${color}CC)`,
-        fontSize: size * 0.36,
-      }}
-    >
-      {initials}
-    </div>
-  );
-}
-
-// ============================================================================
 // Icons
 // ============================================================================
-
-function Hamburger() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <line x1="3" y1="12" x2="21" y2="12" />
-      <line x1="3" y1="18" x2="21" y2="18" />
-    </svg>
-  );
-}
 
 function IconPhoto() {
   return (
@@ -1110,124 +903,6 @@ function IconGrip() {
       <circle cx="8.5" cy="6" r="1" />
       <circle cx="3.5" cy="9" r="1" />
       <circle cx="8.5" cy="9" r="1" />
-    </svg>
-  );
-}
-
-function IconDashboard() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect x="3" y="3" width="7" height="9" rx="1.5" />
-      <rect x="14" y="3" width="7" height="5" rx="1.5" />
-      <rect x="14" y="12" width="7" height="9" rx="1.5" />
-      <rect x="3" y="16" width="7" height="5" rx="1.5" />
-    </svg>
-  );
-}
-
-function IconActivity() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  );
-}
-
-function IconFriends() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
-function IconGroups() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
-function LogoMark() {
-  return (
-    <svg
-      width="28"
-      height="28"
-      viewBox="0 0 64 64"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <path d="M12 8h26a18 18 0 0 1 0 36H22v12h-10V8z" fill="#1B2559" />
-      <path d="M22 30h12l-3 4 3 4H22V30z" fill="#34D399" />
-      <path d="M34 38h10v8H34l-3-4 3-4z" fill="#4F7CFF" />
-      <path d="M44 38h8a8 8 0 0 0 0-8h-8v8z" fill="#8B7CF6" />
-      <rect x="26" y="14" width="14" height="18" rx="1" fill="#FFFFFF" />
-      <rect
-        x="29"
-        y="19"
-        width="8"
-        height="1.5"
-        rx="0.5"
-        fill="#0F1A3D"
-        opacity="0.15"
-      />
-      <rect
-        x="29"
-        y="22"
-        width="6"
-        height="1.5"
-        rx="0.5"
-        fill="#0F1A3D"
-        opacity="0.15"
-      />
     </svg>
   );
 }
