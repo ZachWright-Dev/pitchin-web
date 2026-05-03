@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import Avatar from "@/app/components/Avatar";
 
@@ -45,7 +43,7 @@ const GROUPS: Group[] = [
   { id: "3", name: "Roommates", balance: -48.2, image: "🏠", accent: "#34D399" },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   return (
     <>
       <div className="mb-6 flex items-end justify-between">
