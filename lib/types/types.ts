@@ -32,3 +32,17 @@ export interface UserImageResponse {
   image: string | null;
   imageType: string | null;
 }
+
+export interface GroupOverviewResponse {
+  groups: GroupOverviewGroup[];
+}
+export interface GroupOverviewGroup {
+  id: string;
+  name: string;
+  balance: number;
+  members: GroupMember[];
+}
+export interface GroupMember {
+  id: string;
+  name: string;
+}

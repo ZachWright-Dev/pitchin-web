@@ -7,6 +7,7 @@ import type {
     UserImageResponse,
     PersonBalance,
     GroupBalance,
+    GroupOverviewResponse
  } from "./types/types";
 
 export type { DashboardResponse, GroupImageResponse, UserImageResponse, PersonBalance, GroupBalance };
@@ -66,3 +67,14 @@ export async function getUserImageById(userId: string): Promise<UserImageRespons
 export async function getGroupImage(groupId: string): Promise<GroupImageResponse> {
     return backendPost<GroupImageResponse>("/group/image", { group_id: groupId });
 }
+
+export async function getGroupOverview(): Promise<GroupOverviewResponse> {
+    const session = await auth();
+    if (!session || !session.user) {
+        throw new Error("Session Error or Not Authorized");
+    }
+    const userId = session.user.id;
+ 
+    return backendPost<GroupOverviewResponse>("/user/group-overview", { user_id: userId });
+}
+

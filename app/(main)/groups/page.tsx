@@ -1,57 +1,101 @@
-"use client";
-
 import Link from "next/link";
+import AvatarStack, { type StackMember } from "@/app/(main)/groups/components/AvatarStack";
+import { resolveUserImageSrc } from "../dashboard/utility";
+import {
+  getGroupOverview,
+  getGroupImage,
+  getUserImageById,
+  type GroupImageResponse,
+  type UserImageResponse,
+} from "@/lib/backend-client";
 
-type Member = {
-  initials: string;
-  color: string;
-};
+// ── Helpers ────────────────────────────────────────────────────────────
 
-type Group = {
+const COLORS = ["#4F7CFF", "#8B7CF6", "#34D399", "#F59E0B", "#EF4444", "#06B6D4"];
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .filter(Boolean)
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function assignColor(index: number): string {
+  return COLORS[index % COLORS.length];
+}
+
+// ── Enriched types ─────────────────────────────────────────────────────
+
+type EnrichedGroup = {
   id: string;
   name: string;
-  emoji?: string;
-  members: Member[];
   balance: number;
+  emoji: string | null;
+  groupImage: string | null;
+  groupImageType: string | null;
+  members: StackMember[];
 };
 
-const GROUPS: Group[] = [
-  {
-    id: "1",
-    name: "Nobu Dinner",
-    emoji: "🍣",
-    members: [
-      { initials: "AK", color: "#4F7CFF" },
-      { initials: "SM", color: "#8B7CF6" },
-      { initials: "MC", color: "#34D399" },
-    ],
-    balance: 90,
-  },
-  {
-    id: "2",
-    name: "Ski Trip",
-    emoji: "⛷️",
-    members: [
-      { initials: "DH", color: "#0F1A3D" },
-      { initials: "AK", color: "#4F7CFF" },
-      { initials: "SM", color: "#8B7CF6" },
-    ],
-    balance: 3,
-  },
-  {
-    id: "3",
-    name: "Roommates",
-    emoji: "🏠",
-    members: [
-      { initials: "MC", color: "#34D399" },
-      { initials: "DH", color: "#0F1A3D" },
-      { initials: "AK", color: "#4F7CFF" },
-    ],
-    balance: -40,
-  },
-];
+// ── Page ───────────────────────────────────────────────────────────────
 
-export default function GroupsPage() {
+export default async function GroupsPage() {
+  const data = await getGroupOverview();
+
+  // Collect all unique member IDs across all groups for deduplication
+  const uniqueMemberIds = new Set<string>();
+  for (const group of data.groups) {
+    for (const member of group.members) {
+      uniqueMemberIds.add(member.id);
+    }
+  }
+
+  // Fetch all unique member images in parallel
+  const memberIds = Array.from(uniqueMemberIds);
+  const memberImageResults = await Promise.all(
+    memberIds.map((id) =>
+      getUserImageById(id).catch((): UserImageResponse => ({
+        oauth_image: null,
+        image: null,
+        imageType: null,
+      }))
+    )
+  );
+
+  // Build a lookup map: memberId -> resolved image src
+  const memberImageMap = new Map<string, string | null>();
+  memberIds.forEach((id, i) => {
+    memberImageMap.set(id, resolveUserImageSrc(memberImageResults[i]));
+  });
+
+  // Fetch all group images in parallel
+  const groupImageResults = await Promise.all(
+    data.groups.map((g) =>
+      getGroupImage(g.id).catch((): GroupImageResponse => ({
+        emoji: null,
+        groupImage: null,
+        groupImageType: null,
+      }))
+    )
+  );
+
+  // Enrich groups with image data and resolved member avatars
+  const groups: EnrichedGroup[] = data.groups.map((g, gi) => ({
+    id: g.id,
+    name: g.name,
+    balance: g.balance,
+    emoji: groupImageResults[gi].emoji,
+    groupImage: groupImageResults[gi].groupImage,
+    groupImageType: groupImageResults[gi].groupImageType,
+    members: g.members.map((m, mi) => ({
+      initials: getInitials(m.name),
+      color: assignColor(mi),
+      imageSrc: memberImageMap.get(m.id) ?? null,
+    })),
+  }));
+
   return (
     <>
       <div className="mb-8 flex items-center justify-between">
@@ -86,11 +130,11 @@ export default function GroupsPage() {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-[#0F1A3D]/10 bg-white/80 shadow-sm backdrop-blur">
-        {GROUPS.map((group, i) => (
+        {groups.map((group, i) => (
           <GroupRow
             key={group.id}
             group={group}
-            isLast={i === GROUPS.length - 1}
+            isLast={i === groups.length - 1}
           />
         ))}
       </div>
@@ -98,8 +142,30 @@ export default function GroupsPage() {
   );
 }
 
-function GroupRow({ group, isLast }: { group: Group; isLast: boolean }) {
+// ── Components ─────────────────────────────────────────────────────────
+
+function GroupRow({
+  group,
+  isLast,
+}: {
+  group: EnrichedGroup;
+  isLast: boolean;
+}) {
   const positive = group.balance >= 0;
+
+  const renderGroupIcon = () => {
+    if (group.groupImage && group.groupImageType) {
+      return (
+        <img
+          src={`data:${group.groupImageType};base64,${group.groupImage}`}
+          alt={group.name}
+          className="h-full w-full rounded-2xl object-cover"
+        />
+      );
+    }
+    return <span className="text-2xl">{group.emoji ?? "👥"}</span>;
+  };
+
   return (
     <Link
       href={`/groups/${group.id}`}
@@ -107,8 +173,11 @@ function GroupRow({ group, isLast }: { group: Group; isLast: boolean }) {
         isLast ? "" : "border-b border-[#0F1A3D]/8"
       }`}
     >
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#0F1A3D]/5 text-2xl">
-        {group.emoji ?? "👥"}
+      <div
+        className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl text-2xl"
+        style={{ background: group.groupImage ? undefined : "rgba(15,26,61,0.05)" }}
+      >
+        {renderGroupIcon()}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -144,36 +213,5 @@ function GroupRow({ group, isLast }: { group: Group; isLast: boolean }) {
         <path d="M9 18l6-6-6-6" />
       </svg>
     </Link>
-  );
-}
-
-function AvatarStack({ members }: { members: Member[] }) {
-  const visible = members.slice(0, 4);
-  const overflow = members.length - visible.length;
-  return (
-    <div className="flex items-center">
-      {visible.map((m, i) => (
-        <div
-          key={i}
-          className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-white font-semibold text-white"
-          style={{
-            marginLeft: i === 0 ? 0 : -8,
-            background: `linear-gradient(135deg, ${m.color}, ${m.color}CC)`,
-            fontSize: 10,
-            zIndex: visible.length - i,
-          }}
-        >
-          {m.initials}
-        </div>
-      ))}
-      {overflow > 0 && (
-        <div
-          className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-white bg-[#0F1A3D]/10 text-[10px] font-semibold text-[#0F1A3D]/60"
-          style={{ marginLeft: -8 }}
-        >
-          +{overflow}
-        </div>
-      )}
-    </div>
   );
 }
