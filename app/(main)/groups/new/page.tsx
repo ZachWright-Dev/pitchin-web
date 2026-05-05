@@ -2,33 +2,17 @@
 
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-
-// ============================================================================
-// Types & Constants
-// ============================================================================
-
-type LineItem = { id: string; name: string; qty: string; price: string };
-type AmountMode = "percent" | "dollar";
-
-const NUMBER_INPUT_CLASS = "no-spinner";
-
-function newItem(): LineItem {
-  return { id: crypto.randomUUID(), name: "", qty: "1", price: "" };
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-const num = (s: string) => {
-  const n = parseFloat(s);
-  return Number.isFinite(n) ? n : 0;
-};
-
-const itemTotal = (item: LineItem) => num(item.price) * (num(item.qty) || 0);
-
-const computeAmount = (value: string, mode: AmountMode, base: number) =>
-  mode === "percent" ? base * (num(value) / 100) : num(value);
+import { parseReceiptAction } from "./actions";
+import {
+  LineItem,
+  AmountMode,
+  NUMBER_INPUT_CLASS,
+  newItem,
+  num,
+  itemTotal,
+  computeAmount,
+  fileToBase64
+} from "@/app/(main)/groups/new/utility";
 
 // ============================================================================
 // Page
@@ -48,6 +32,7 @@ export default function CreateGroupPage() {
   const [gratuityValue, setGratuityValue] = useState("");
   const [gratuityMode, setGratuityMode] = useState<AmountMode>("dollar");
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const groupPhotoRef = useRef<HTMLInputElement>(null);
   const receiptPhotoRef = useRef<HTMLInputElement>(null);
@@ -72,24 +57,47 @@ export default function CreateGroupPage() {
   const handleAiParse = async () => {
     if (!receiptPhoto) return;
     setAiLoading(true);
-    await new Promise<void>((r) => setTimeout(r, 1000));
-    setLineItems([
-      { id: "1", name: "Black cod miso", qty: "1", price: "38.00" },
-      { id: "2", name: "Edamame", qty: "1", price: "9.00" },
-      { id: "3", name: "Sake flight", qty: "1", price: "24.00" },
-    ]);
-    setTaxValue("8");
-    setTaxMode("dollar");
-    setGratuityValue("18");
-    setGratuityMode("dollar");
-    setAiLoading(false);
+    setAiError(null);
+
+    try {
+      const base64Image = await fileToBase64(receiptPhoto);
+      const mimeType = receiptPhoto.type || "image/jpeg";
+      const result = await parseReceiptAction(base64Image, mimeType);
+
+      if (!result.success) {
+        setAiError(result.error);
+        return;
+      }
+
+      setLineItems(
+        result.items.map((item) => ({
+          id: crypto.randomUUID(),
+          name: item.name,
+          qty: String(item.quantity),
+          price: item.price.toFixed(2),
+        }))
+      );
+
+      // Tax is returned as a dollar amount
+      setTaxValue(result.tax.toFixed(2));
+      setTaxMode("dollar");
+
+      // Gratuity is not in the response — default to 0
+      setGratuityValue("0");
+      setGratuityMode("dollar");
+    } catch (err) {
+      setAiError(
+        err instanceof Error ? err.message : "Failed to parse receipt"
+      );
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const canCreate = lineItems.length > 0;
 
   return (
     <>
-      {/* Hide native number-input spinners across the whole page */}
       <style jsx global>{`
         .no-spinner::-webkit-outer-spin-button,
         .no-spinner::-webkit-inner-spin-button {
@@ -124,6 +132,7 @@ export default function CreateGroupPage() {
             onPickPhoto={handleReceiptPhotoChange}
             onManualEntry={() => setShowItemModal(true)}
             onAiParse={handleAiParse}
+            aiError={aiError}
           />
 
           {lineItems.length > 0 && (
@@ -268,6 +277,7 @@ function ReceiptCard({
   onPickPhoto,
   onManualEntry,
   onAiParse,
+  aiError,
 }: {
   receiptPhoto: File | null;
   receiptPhotoUrl: string | null;
@@ -278,6 +288,7 @@ function ReceiptCard({
   onPickPhoto: (f: File) => void;
   onManualEntry: () => void;
   onAiParse: () => void;
+  aiError: string | null;
 }) {
   return (
     <Card>
@@ -337,6 +348,13 @@ function ReceiptCard({
           }}
         />
       </div>
+
+      {aiError && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <p className="font-semibold">Failed to parse receipt</p>
+          <p className="mt-0.5 text-xs text-red-600">{aiError}</p>
+        </div>
+      )}
 
       <div className="flex gap-3">
         <button
