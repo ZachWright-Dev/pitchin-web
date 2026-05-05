@@ -46,3 +46,23 @@ export interface GroupMember {
   id: string;
   name: string;
 }
+interface ReceiptItem {
+  name: string
+  price: number
+  quantity: number
+}
+
+interface ReceiptSuccessSchema {
+  success: true
+  items: ReceiptItem[]
+  subTotal: number
+  tax: number
+  total: number
+}
+
+interface ReceiptErrorSchema {
+  success: false
+  error: string
+}
+
+export type ParseReceiptResponse = ReceiptSuccessSchema | ReceiptErrorSchema;

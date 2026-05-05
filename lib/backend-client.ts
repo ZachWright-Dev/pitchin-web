@@ -7,7 +7,8 @@ import type {
     UserImageResponse,
     PersonBalance,
     GroupBalance,
-    GroupOverviewResponse
+    GroupOverviewResponse,
+    ParseReceiptResponse
  } from "./types/types";
 
 export type { DashboardResponse, GroupImageResponse, UserImageResponse, PersonBalance, GroupBalance };
@@ -76,5 +77,9 @@ export async function getGroupOverview(): Promise<GroupOverviewResponse> {
     const userId = session.user.id;
  
     return backendPost<GroupOverviewResponse>("/user/group-overview", { user_id: userId });
+}
+
+export async function getParsedReceipt(base64Image: string, mimeType: string): Promise<ParseReceiptResponse> {
+    return backendPost<ParseReceiptResponse>("/group/receipt-parse", { base64Image, mimeType });
 }
 
