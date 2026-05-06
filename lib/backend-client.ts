@@ -1,6 +1,5 @@
 import { cookies, headers } from "next/headers";
 import { getToken } from "next-auth/jwt";
-import { auth } from "@/app/auth";
 import type {
     DashboardResponse,
     GroupImageResponse,
@@ -32,16 +31,16 @@ async function getAuthToken() {
  * server components.
  */
 
-async function backendPost<T>(path: string, body: Record<string, unknown>): Promise<T> {
+async function backendPost<T>(path: string, body?: Record<string, unknown>): Promise<T> {
     const authToken = await getAuthToken();
 
     const res = await fetch(`${BACKEND_URL}${path}`, {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
+            ...(body ? {"Content-Type": "application/json"} : {}),
             ...(authToken ? {Authorization: `Bearer ${authToken}`} : {}),
         },
-        body: JSON.stringify(body),
+        ...(body ? {body: JSON.stringify(body)} : {}),
     });
 
     if (!res.ok) {
@@ -52,13 +51,7 @@ async function backendPost<T>(path: string, body: Record<string, unknown>): Prom
 }
 
 export async function getDashboard(): Promise<DashboardResponse> {
-    const session = await auth();
-    if (!session || !session.user) {
-        throw new Error("Session Error or Not Authorized");
-    }
-    const userId = session.user.id;
-    
-    return backendPost<DashboardResponse>("/dashboard", { user_id: userId });
+    return backendPost<DashboardResponse>("/dashboard");
 }
 
 export async function getUserImageById(userId: string): Promise<UserImageResponse> {
@@ -70,13 +63,7 @@ export async function getGroupImage(groupId: string): Promise<GroupImageResponse
 }
 
 export async function getGroupOverview(): Promise<GroupOverviewResponse> {
-    const session = await auth();
-    if (!session || !session.user) {
-        throw new Error("Session Error or Not Authorized");
-    }
-    const userId = session.user.id;
- 
-    return backendPost<GroupOverviewResponse>("/user/group-overview", { user_id: userId });
+    return backendPost<GroupOverviewResponse>("/user/group-overview");
 }
 
 export async function getParsedReceipt(base64Image: string, mimeType: string): Promise<ParseReceiptResponse> {
