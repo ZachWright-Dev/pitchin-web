@@ -84,7 +84,7 @@ export default function CreateGroupPage() {
     }
   };
 
-  const canCreate = lineItems.length > 0;
+  const canCreate: boolean = lineItems.length > 0 && groupName !== "";
 
   return (
     <>
