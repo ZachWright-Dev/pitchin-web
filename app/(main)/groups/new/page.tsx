@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { parseReceiptAction } from "@/app/(main)/groups/new/actions";
+import { useRouter } from "next/navigation";
+import { parseReceiptAction, createGroupAction } from "@/app/(main)/groups/new/actions";
 import { LineItem, AmountMode, fileToBase64 } from "@/app/(main)/groups/new/utility";
 import { PageHeader } from "@/app/(main)/groups/new/components/PageHeader";
 import { GroupInfoCard } from "@/app/(main)/groups/new/components/GroupInfoCard";
@@ -10,8 +11,11 @@ import { ReceiptItemsSummary } from "@/app/(main)/groups/new/components/ReceiptI
 import { FooterActions } from "@/app/(main)/groups/new/components/FooterActions";
 import { AiLoadingOverlay } from "@/app/(main)/groups/new/components/AiLoadingOverlay";
 import { ItemEntryModal } from "@/app/(main)/groups/new/components/ItemEntryModal";
+import type { CreateGroupRequest } from "@/lib/types/types";
 
 export default function CreateGroupPage() {
+  const router = useRouter();
+
   const [groupName, setGroupName] = useState("");
   const [groupPhoto, setGroupPhoto] = useState<File | null>(null);
   const [groupPhotoUrl, setGroupPhotoUrl] = useState<string | null>(null);
@@ -26,6 +30,8 @@ export default function CreateGroupPage() {
   const [gratuityMode, setGratuityMode] = useState<AmountMode>("dollar");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const groupPhotoRef = useRef<HTMLInputElement>(null);
   const receiptPhotoRef = useRef<HTMLInputElement>(null);
@@ -84,6 +90,76 @@ export default function CreateGroupPage() {
     }
   };
 
+  // ---------------------------------------------------------------------------
+  // Build the request body and submit
+  // ---------------------------------------------------------------------------
+  const handleCreateGroup = async () => {
+    if (!canCreate || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // Compute tax & tip as absolute dollar amounts
+      const subtotal = lineItems.reduce(
+        (sum, item) => sum + parseFloat(item.price) * parseFloat(item.qty || "1"),
+        0
+      );
+
+      const taxAmount =
+        taxMode === "percent"
+          ? subtotal * (parseFloat(taxValue || "0") / 100)
+          : parseFloat(taxValue || "0");
+
+      const tipAmount =
+        gratuityMode === "percent"
+          ? subtotal * (parseFloat(gratuityValue || "0") / 100)
+          : parseFloat(gratuityValue || "0");
+
+      // Encode group photo if one was selected
+      let groupImageBase64: string | null = null;
+      let groupImageType: string | null = null;
+      if (groupPhoto) {
+        groupImageBase64 = await fileToBase64(groupPhoto);
+        groupImageType = groupPhoto.type || "image/jpeg";
+      }
+
+      // Encode receipt photo if one was selected
+      let receiptImageBase64: string | null = null;
+      if (receiptPhoto) {
+        receiptImageBase64 = await fileToBase64(receiptPhoto);
+      }
+
+      const request: CreateGroupRequest = {
+        name: groupName,
+        emoji: null,
+        groupImage: groupImageBase64,
+        groupImageType: groupImageType,
+        receipt: {
+          image: receiptImageBase64,
+          items: lineItems.map((item) => ({
+            name: item.name,
+            quantity: parseFloat(item.qty || "1"),
+            unitPrice: parseFloat(item.price),
+          })),
+          taxAmount: parseFloat(taxAmount.toFixed(2)),
+          tipAmount: parseFloat(tipAmount.toFixed(2)),
+        },
+      };
+
+      const response = await createGroupAction(request);
+
+      // Redirect to the newly created group page
+      router.push(`/groups/${response.id}`);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to create group"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const canCreate: boolean = lineItems.length > 0 && groupName !== "";
 
   return (
@@ -136,7 +212,17 @@ export default function CreateGroupPage() {
             />
           )}
 
-          <FooterActions canCreate={canCreate} />
+          {submitError && (
+            <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">
+              {submitError}
+            </p>
+          )}
+
+          <FooterActions
+            canCreate={canCreate}
+            isSubmitting={isSubmitting}
+            onSubmit={handleCreateGroup}
+          />
         </div>
       </div>
 

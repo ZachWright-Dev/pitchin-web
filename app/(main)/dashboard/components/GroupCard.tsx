@@ -1,9 +1,9 @@
+import Link from "next/link";
 import { GroupWithImage } from "../types";
- 
+
 
 export default function GroupCard({ group }: { group: GroupWithImage }) {
   const positive = group.balance >= 0;
- 
   // Determine what to show: emoji, base64 image, or fallback
   const renderGroupIcon = () => {
     if (group.groupImage && group.groupImageType) {
@@ -19,7 +19,7 @@ export default function GroupCard({ group }: { group: GroupWithImage }) {
   };
  
   return (
-    <button className="group relative overflow-hidden rounded-2xl border border-[#0F1A3D]/10 bg-white/90 p-5 text-left shadow-sm backdrop-blur transition hover:translate-y-[-2px] hover:border-[#0F1A3D]/20 hover:shadow-md">
+    <Link href={`/groups/${group.id}`} className="group relative overflow-hidden rounded-2xl border border-[#0F1A3D]/10 bg-white/90 p-5 text-left shadow-sm backdrop-blur transition hover:translate-y-[-2px] hover:border-[#0F1A3D]/20 hover:shadow-md block">
       <span
         aria-hidden
         className="absolute inset-x-0 top-0 h-1"
@@ -61,6 +61,6 @@ export default function GroupCard({ group }: { group: GroupWithImage }) {
           <path d="M5 12h14M13 5l7 7-7 7" />
         </svg>
       </div>
-    </button>
+    </Link>
   );
 }
