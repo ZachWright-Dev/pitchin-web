@@ -7,7 +7,9 @@ import type {
     PersonBalance,
     GroupBalance,
     GroupOverviewResponse,
-    ParseReceiptResponse
+    ParseReceiptResponse,
+    CreateGroupRequest,
+    CreateGroupResponse,
  } from "./types/types";
 
 export type { DashboardResponse, GroupImageResponse, UserImageResponse, PersonBalance, GroupBalance };
@@ -70,3 +72,6 @@ export async function getParsedReceipt(base64Image: string, mimeType: string): P
     return backendPost<ParseReceiptResponse>("/group/receipt-parse", { base64Image, mimeType });
 }
 
+export async function createGroup(newGroup: CreateGroupRequest): Promise<CreateGroupResponse> {
+    return backendPost<CreateGroupResponse>("/group", { ...newGroup }); 
+}
