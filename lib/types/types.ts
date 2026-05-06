@@ -112,3 +112,11 @@ export interface CreateGroupResponse {
   createdAt: string
   receipt: ResponseReceipt
 }
+
+export interface GetReceiptDataResponse extends ResponseReceipt {
+    image: string
+}
+
+export interface GetGroupMembersResponse {
+    members: GroupMember[]
+}

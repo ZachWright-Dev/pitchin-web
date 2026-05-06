@@ -10,6 +10,8 @@ import type {
     ParseReceiptResponse,
     CreateGroupRequest,
     CreateGroupResponse,
+    GetReceiptDataResponse,
+    GetGroupMembersResponse,
  } from "./types/types";
 
 export type { DashboardResponse, GroupImageResponse, UserImageResponse, PersonBalance, GroupBalance };
@@ -27,11 +29,6 @@ async function getAuthToken() {
         raw: true,
     });
 }
-
-/**
- * TODO: Call all server endpoints here and export them to the necessary
- * server components.
- */
 
 async function backendPost<T>(path: string, body?: Record<string, unknown>): Promise<T> {
     const authToken = await getAuthToken();
@@ -74,4 +71,12 @@ export async function getParsedReceipt(base64Image: string, mimeType: string): P
 
 export async function createGroup(newGroup: CreateGroupRequest): Promise<CreateGroupResponse> {
     return backendPost<CreateGroupResponse>("/group", { ...newGroup }); 
+}
+
+export async function getReceiptData(groupId: string): Promise<GetReceiptDataResponse> {
+    return backendPost<GetReceiptDataResponse>('/receipt-data', { groupId });
+}
+
+export async function getGroupMembers(groupId: string): Promise<GetGroupMembersResponse> {
+    return backendPost<GetGroupMembersResponse>('/members', { groupId });
 }

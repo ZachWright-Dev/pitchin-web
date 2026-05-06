@@ -17,7 +17,7 @@ export default function GroupLayout({ children }: { children: ReactNode }) {
       label: "Settlements",
       href: `/groups/${groupId}/settlements`,
     },
-    { key: "activity", label: "Activity", href: `/groups/${groupId}/activity` },
+    { key: "activity", label: "Activity", href: `/groups${groupId}/overview` },
   ];
 
   return (
