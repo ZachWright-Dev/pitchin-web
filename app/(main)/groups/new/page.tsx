@@ -128,6 +128,10 @@ export default function CreateGroupPage() {
           {lineItems.length > 0 && (
             <ReceiptItemsSummary
               items={lineItems}
+              taxValue={taxValue}
+              taxMode={taxMode}
+              gratuityValue={gratuityValue}
+              gratuityMode={gratuityMode}
               onEdit={() => setShowItemModal(true)}
             />
           )}

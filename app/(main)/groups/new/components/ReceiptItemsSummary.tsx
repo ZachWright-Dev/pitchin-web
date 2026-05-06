@@ -1,10 +1,18 @@
-import { LineItem, num, itemTotal } from "@/app/(main)/groups/new/utility";
+import { LineItem, AmountMode, num, itemTotal, computeAmount } from "@/app/(main)/groups/new/utility";
 
 export function ReceiptItemsSummary({
   items,
+  taxValue,
+  taxMode,
+  gratuityValue,
+  gratuityMode,
   onEdit,
 }: {
   items: LineItem[];
+  taxValue: string;
+  taxMode: AmountMode;
+  gratuityValue: string;
+  gratuityMode: AmountMode;
   onEdit: () => void;
 }) {
   return (
@@ -43,6 +51,33 @@ export function ReceiptItemsSummary({
           </span>
         </div>
       ))}
+
+      {(() => {
+        const subtotal = items.reduce((sum, item) => sum + itemTotal(item), 0);
+        const tax = computeAmount(taxValue, taxMode, subtotal);
+        const gratuity = computeAmount(gratuityValue, gratuityMode, subtotal);
+        const grandTotal = subtotal + tax + gratuity;
+        const rows: { label: string; value: number; bold?: boolean }[] = [
+          { label: "Subtotal", value: subtotal },
+          { label: "Tax", value: tax },
+          { label: "Gratuity", value: gratuity },
+          { label: "Total", value: grandTotal, bold: true },
+        ];
+        return (
+          <div className="border-t border-[#0F1A3D]/10 px-6 py-4 space-y-1">
+            {rows.map(({ label, value, bold }) => (
+              <div key={label} className="flex justify-between">
+                <span className={`text-sm ${bold ? "font-semibold" : "text-[#0F1A3D]/60"}`}>
+                  {label}
+                </span>
+                <span className={`font-mono text-sm ${bold ? "font-semibold" : "text-[#0F1A3D]/60"}`}>
+                  ${value.toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
