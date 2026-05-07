@@ -115,6 +115,7 @@ export interface CreateGroupResponse {
 
 export interface GetReceiptDataResponse extends ResponseReceipt {
     image: string
+    groupName: string
 }
 
 export interface GetGroupMembersResponse {

@@ -74,9 +74,9 @@ export async function createGroup(newGroup: CreateGroupRequest): Promise<CreateG
 }
 
 export async function getReceiptData(groupId: string): Promise<GetReceiptDataResponse> {
-    return backendPost<GetReceiptDataResponse>('/receipt-data', { groupId });
+    return backendPost<GetReceiptDataResponse>('/group/receipt-data', { group_id: groupId });
 }
 
 export async function getGroupMembers(groupId: string): Promise<GetGroupMembersResponse> {
-    return backendPost<GetGroupMembersResponse>('/members', { groupId });
+    return backendPost<GetGroupMembersResponse>('/group/members', { group_id: groupId });
 }
